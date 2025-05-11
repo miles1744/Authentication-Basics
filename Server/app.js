@@ -18,7 +18,7 @@
   app.use(express.urlencoded({ extended: false }));
 
   app.get("/", (req, res) => res.render("index", { user: req.user }));
-  app.get("/sign-up", (req, res) => res.render("sign-up-form"))
+  app.get("/sign-up", (req, res) => res.render("sign-up-form"));
   app.post("/sign-up", async (req, res, next) => {
     try {
       await pool.query("INSERT INTO users (username, password) VALUES ($1, $2)", [
@@ -30,6 +30,15 @@
       return next(err);
     }
   });
+  app.get("/log-out", (req, res, next) => {
+    req.logout((err) => {
+      if (err) {
+        return next(err);
+      }
+      res.redirect("/");
+    });
+  });
+  
   
   passport.use(
     new LocalStrategy(async (username, password, done) => {

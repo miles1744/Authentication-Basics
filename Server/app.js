@@ -17,29 +17,22 @@
   app.use(passport.session());
   app.use(express.urlencoded({ extended: false }));
 
-  app.get("/", (req, res) => res.render("index", { user: req.user }));
+  app.get("/", (req, res) => {
+    res.render("index", { user: req.user });
+  });  
   app.get("/sign-up", (req, res) => res.render("sign-up-form"));
   app.post("/sign-up", async (req, res, next) => {
     try {
-      const { username, password } = req.body;
-  
-      const result = await pool.query(
-        "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *",
-        [username, password]
-      );
-  
-      const newUser = result.rows[0];
-  
-      req.login(newUser, (err) => {
-        if (err) return next(err);
-        return res.redirect("/");
-      });
-  
-    } catch (err) {
+      await pool.query("INSERT INTO users (username, password) VALUES ($1, $2)", [
+        req.body.username,
+        req.body.password,
+      ]);
+      res.redirect("/");
+    } catch(err) {
       return next(err);
     }
   });
-  
+
   
   
   passport.use(
@@ -48,19 +41,18 @@
         const { rows } = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
         const user = rows[0];
   
-        if (!user) return done(null, false, { message: "Incorrect username" });
-  
+        if (!user) {
+          return done(null, false, { message: "Incorrect username" });
+        }
         if (user.password !== password) {
           return done(null, false, { message: "Incorrect password" });
         }
-  
-        return done(null, user);  // 👈 Must return a full user with `id`
-      } catch (err) {
+        return done(null, user);
+      } catch(err) {
         return done(err);
       }
     })
   );
-  
 
   passport.serializeUser((user, done) => {
     done(null, user.id);
@@ -84,7 +76,7 @@
       failureRedirect: "/"
     })
   );
-  
+
   app.get("/log-out", (req, res, next) => {
     req.logout((err) => {
       if (err) {
@@ -93,5 +85,7 @@
       res.redirect("/");
     });
   });
+  
+  
 
   app.listen(3000, () => console.log("app listening on port 3000!"));

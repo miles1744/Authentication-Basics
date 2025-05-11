@@ -21,15 +21,25 @@
   app.get("/sign-up", (req, res) => res.render("sign-up-form"));
   app.post("/sign-up", async (req, res, next) => {
     try {
-      await pool.query("INSERT INTO users (username, password) VALUES ($1, $2)", [
-        req.body.username,
-        req.body.password,
-      ]);
-      res.redirect("/");
-    } catch(err) {
+      const { username, password } = req.body;
+  
+      const result = await pool.query(
+        "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *",
+        [username, password]
+      );
+  
+      const newUser = result.rows[0];
+  
+      req.login(newUser, (err) => {
+        if (err) return next(err);
+        return res.redirect("/");
+      });
+  
+    } catch (err) {
       return next(err);
     }
   });
+  
 
   
   
